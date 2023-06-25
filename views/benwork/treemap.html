@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Treemap</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    @import url(https://fonts.googleapis.com/css2?family=Comfortaa:wght@300);
+
+    body {
+      font-family: 'Comfortaa', cursive;
+      background: linear-gradient(130deg, #ccc 5%, #c8c8c8 80%);
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 50px 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .container {
+      margin-top: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .chart {
+      width: 1200px;
+      height: 900px; /* Increase the height to accommodate the treemap */
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="index.html">Bar Chart</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="map.html">Map</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="scatter.html">Scatter Plot</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="radar.html">Radar Plot</a>
+        </li>
+        <li class="nav-item active">
+          <a class="nav-link" href="treemap.html">Treemap</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <h1>Water Quality Dashboard</h1>
+    <div id="filter-container">
+      <label for="district-select">Select District:</label>
+      <select id="district-select">
+        <option value="all">All Districts</option>
+      </select>
+    </div>
+    <div id="chart-container">
+      <h2 id="chart-title"></h2>
+      <div id="chart"></div>
+    </div>
+  </div>
+
+  <script>
+    d3.csv("data.csv").then(function(data) {
+      console.log(data); // Check if the data is loaded correctly
+
+      // Data preprocessing
+      const nestedData = d3.group(data, d => d.District);
+      console.log(nestedData); // Check if the data is grouped correctly
+
+      const districts = Array.from(nestedData.keys()); // Extract the district names
+
+      // Add district options to the select element
+      const districtSelect = d3.select("#district-select");
+      districtSelect.selectAll("option")
+        .data(districts)
+        .enter()
+        .append("option")
+        .attr("value", function(d) {
+          return d;
+        })
+        .text(function(d) {
+          return d;
+        });
+
+      // Chart dimensions
+      const width = 1000;
+      const height = 800;
+
+      // Create a D3.js treemap layout
+      const treemap = d3.treemap()
+        .size([width, height])
+        .padding(1);
+
+      // Function to update the treemap based on the selected district
+      function updateTreemap(selectedDistrict) {
+        // Filter the data based on the selected district
+        const filteredData = selectedDistrict === "all" ? data : data.filter(d => d.District === selectedDistrict);
+
+        const root = {
+          name: "Uganda",
+          children: Array.from(d3.group(filteredData, d => d.District), ([district, values]) => ({
+            name: district,
+            children: Array.from(values, entry => ({
+              name: entry.Parameter,
+              village: entry.village,
+              ecoli: +entry.ecoli,
+              ph: +entry.pH,
+              conductivity: +entry["Electrical Conductivity"],
+              turbidity: +entry.turbidity
+            }))
+          }))
+        };
+
+        // Compute the treemap layout
+        const rootHierarchy = d3.hierarchy(root)
+          .sum(function(d) {
+            return d.ecoli + d.ph + d.conductivity + d.turbidity;
+          })
+          .sort(function(a, b) {
+            return b.value - a.value;
+          })
+          .each(function(d) {
+            d.name = d.data.name; // Assign district name to each node
+          });
+
+        treemap(rootHierarchy);
+
+        // Create the SVG container
+        const svg = d3.select("#chart")
+          .selectAll("svg")
+          .data([null])
+          .join("svg")
+          .attr("viewBox", `0 0 ${width} ${height}`)
+          .attr("preserveAspectRatio", "xMidYMid meet")
+          .append("g")
+          .attr("transform", "translate(0,0)");
+
+        // Define an array of colors for districts
+        const districtColors = d3.scaleOrdinal(d3.schemeCategory10);
+
+        // Create the treemap nodes
+        const node = svg.selectAll("g")
+          .data(rootHierarchy.leaves())
+          .join("g")
+          .attr("transform", function(d) {
+            return "translate(" + d.x0 + "," + d.y0 + ")";
+          });
+        
+        node.append("rect")
+          .attr("width", function(d) {
+            return d.x1 - d.x0;
+          })
+          .attr("height", function(d) {
+            return d.y1 - d.y0;
+          })
+          .attr("fill", function(d) {
+            const districtColor = districtColors(d.parent.data.name); // Assign a color based on district name
+            const gradientId = "gradient-" + d.parent.data.name.replace(/\s+/g, '-').toLowerCase(); // Generate a unique gradient id for each district
+            let gradient = d3.select(this).select("#" + gradientId);
+        
+            // If the gradient for the district doesn't exist, create it
+            if (gradient.empty()) {
+              const gradientData = [
+                { offset: "0%", color: "white" },
+                { offset: "100%", color: d3.color(districtColor).darker(0.8) }
+              ];
+        
+              // Create the gradient and color stops
+              gradient = d3.select(this).append("linearGradient")
+                .attr("id", gradientId)
+                .attr("gradientUnits", "userSpaceOnUse")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 1)
+                .attr("y2", 1);
+        
+              gradient.selectAll("stop")
+                .data(gradientData)
+                .enter()
+                .append("stop")
+                .attr("offset", function(d) {
+                  return d.offset;
+                })
+                .attr("stop-color", function(d) {
+                  return d.color;
+                });
+            }
+        
+            return "url(#" + gradientId + ")"; // Apply the linear gradient
+          })
+          .attr("stroke", "white");
+                
+        // Define a linear gradient for the rectangle fill
+        const gradient = node.append("linearGradient")
+          .attr("id", function(d, i) { return "gradient-" + i; })
+          .attr("gradientUnits", "userSpaceOnUse")
+          .attr("x1", 0)
+          .attr("y1", 0)
+          .attr("x2", 1)
+          .attr("y2", 1);
+
+        gradient.append("stop")
+          .attr("offset", "0%")
+          .attr("stop-color", "white");
+
+        gradient.append("stop")
+          .attr("offset", "100%")
+          .attr("stop-color", function(d) {
+            const color = districtColors(d.parent.data.name);
+            const darkerColor = d3.color(color).darker(0.8);
+            return darkerColor.toString(); // Convert the color object back to string
+          });
+
+
+        node.append("rect")
+          .attr("width", function(d) {
+            return d.x1 - d.x0;
+          })
+          .attr("height", function(d) {
+            return d.y1 - d.y0;
+          })
+          .attr("fill", function(d, i) {
+            return "url(#gradient-" + i + ")"; // Apply the linear gradient
+          })
+          .attr("stroke", "white");
+
+        node.append("clipPath")
+          .attr("id", function(d, i) { return "clip-" + i; })
+          .append("use")
+          .attr("xlink:href", function(d, i) { return "#clip-" + i; })
+          .attr("fill", "none");
+
+        node.append("text")
+          .attr("clip-path", function(d, i) { return "url(#clip-" + i + ")"; })
+          .selectAll("tspan")
+          .data(function(d) {
+            return (d.data.name || "").split(/(?=[A-Z][^A-Z])/g);
+          })
+          .join("tspan")
+          .attr("x", 4)
+          .attr("y", function(d, i) {
+            return 13 + i * 10;
+          })
+          .text(function(d) {
+            return d;
+          });
+
+        node.append("title")
+          .text(function(d) {
+            return "District: " + d.parent.data.name + "\nParameter: " + d.data.name + "\nVillage: " + d.data.village + "\nEcoli: " + d.data.ecoli + "\npH: " + d.data.ph + "\nTurbidity: " + d.data.turbidity;
+          });
+      }
+
+      // Function to handle the select change event
+      function handleSelectChange() {
+        const selectedDistrict = districtSelect.property("value");
+        updateTreemap(selectedDistrict);
+      }
+
+      // Event listener for select change event
+      districtSelect.on("change", handleSelectChange);
+
+      // Initial treemap update
+      updateTreemap("all");
+    });
+  </script>
+</body>
+</html>

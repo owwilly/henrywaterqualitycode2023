@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Water Quality Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    @import url(https://fonts.googleapis.com/css2?family=Comfortaa:wght@300);
+
+    body {
+      font-family: 'Comfortaa', cursive;
+      background: linear-gradient(130deg, #ccc 5%, #c8c8c8 80%);
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 50px 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+     #chart-container {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .container {
+      margin-top: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #chart-container {
+      margin-top: 30px;
+    }
+
+    #parameter-select,
+    #district-select {
+      margin-bottom: 20px;
+    }
+
+    .chart {
+      width: 1000px;
+      height: 600px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark flex-column">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link active" href="index.html">
+            <i class="fas fa-chart-bar mr-2"></i>
+            Bar Chart
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="bar.html">
+            <i class="fas fa-map-marker-alt mr-2"></i>
+            Bar Chart 2
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="bubble.html">
+            <i class="fas fa-map-marker-alt mr-2"></i>
+            Bubble Chart 1
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="bubble2.html">
+            <i class="fas fa-map-marker-alt mr-2"></i>
+             Bubble Chart 2
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="map.html">
+            <i class="fas fa-map-marker-alt mr-2"></i>
+            Map
+          </a>
+        </li>
+        <li class="nav-item ">
+          <a class="nav-link" href="scatter.html">
+            <i class="fas fa-dot-circle mr-2"></i>
+            Scatter Plot
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="radar.html">
+            <i class="fas fa-chart-area mr-2"></i>
+            Radar Plot
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="treemap.html">
+            <i class="fas fa-th-large mr-2"></i>
+            Treemap
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <h1>Water Quality Dashboard</h1>
+    <div>
+      <label for="parameter-select">Select Parameter:</label>
+      <select id="parameter-select" onchange="updateChart()">
+        <option value="ecoli">Ecoli</option>
+        <option value="turbidity">Turbidity</option>
+        <option value="pH">pH</option>
+        <option value="sulphate">Sulphate</option>
+      </select>
+    </div>
+    <div>
+      <label for="district-select">Select District:</label>
+      <select id="district-select" onchange="updateChart()">
+        <option value="all">All Districts</option>
+      </select>
+    </div>
+    <div id="chart-container">
+      <h2 id="chart-title"></h2>
+      <div id="radar-chart" class="chart"></div>
+    </div>
+  </div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest"></script>
+  <script>
+    // Global variables
+    var data;
+    var currentParameter = "ecoli";
+    var currentDistrict = "all";
+    var chart;
+
+    // Load data from data.csv and target.csv
+    d3.csv("data.csv").then(function(dataset) {
+      data = dataset;
+      populateDistrictOptions(data);
+      updateChart();
+    });
+
+    // Function to populate district options
+    function populateDistrictOptions(data) {
+      var districtOptions = Array.from(new Set(data.map(d => d.District)));
+      var select = d3.select("#district-select");
+    
+      // Log the array of districts to the console
+      console.log("Districts:", districtOptions);
+    
+      select.selectAll("option")
+        .data(districtOptions)
+        .enter()
+        .append("option")
+        .text(function(d) { return d; })
+        .attr("value", function(d) { return d; });
+    }
+
+    // Function to update the chart based on the selected parameter and district
+    function updateChart() {
+      var parameter = d3.select("#parameter-select").node().value;
+      var district = d3.select("#district-select").node().value;
+      currentParameter = parameter;
+      currentDistrict = district;
+
+      // Process the data
+      var processedData = processData(data, parameter, district);
+
+      // Prepare data for radar chart
+      var chartData = {
+        series: [
+          {
+            name: parameter,
+            data: processedData.map(function(d) { return d.value; })
+          }
+        ],
+        labels: processedData.map(function(d) { return d.district; })
+      };
+
+      // Set up chart options
+      var chartOptions = {
+        chart: {
+          animations: {
+            enabled: true, // Enable animations
+            dynamicAnimation: {
+              speed: 500 // Set the animation speed
+            }
+          },
+          height: 600
+        },
+        series: chartData.series,
+        labels: chartData.labels,
+        dataLabels: {
+          enabled: true,
+          style: {
+            fill: '#000000',
+            fontSize: '12px',
+            fontFamily: 'Comfortaa, cursive',
+            transform: 'rotate(-90deg)', // Rotate labels by -45 degrees
+            textAnchor: 'end' // Align rotated labels to the end
+          }
+        },
+        plotOptions: {
+          radar: {
+            dataLabels: {
+              offsetY: 5,
+              formatter: function(value, { seriesIndex, dataPointIndex }) {
+                if (value === Math.max(...chartData.series[seriesIndex].data))
+                  return value;
+                return '';
+              }
+            },
+            polygons: {
+              fill: {
+                colors: ['#AA4A44', '#2979ff']
+              }
+            }
+          }
+        }
+      };
+
+      // Remove existing chart
+      if (chart) {
+        chart.destroy();
+      }
+
+      // Create radar chart
+      chart = new ApexCharts(document.querySelector("#radar-chart"), chartOptions);
+      chart.render();
+
+      // Update chart title
+      var chartTitle = getChartTitle(parameter, district);
+      d3.select("#chart-title")
+        .text(chartTitle);
+    }
+
+    // Function to process the raw data
+    function processData(data, parameter, district) {
+      // Filter the data based on the selected district
+      var filteredData = data;
+      if (district !== "all") {
+        filteredData = data.filter(function(d) {
+          return d.District === district;
+        });
+      }
+
+      // Process the filtered data here and return an array of objects with district, value, and color properties
+      return filteredData.map(function(d) {
+        return {
+          district: d.District.substring(0, 3), // Truncate label to the first 3 characters
+          value: +d[parameter]
+        };
+      });
+    }
+
+    // Function to get the chart title based on the parameter and district
+    function getChartTitle(parameter, district) {
+      var title = "";
+      if (district === "all") {
+        title += parameter + " Concentration by District";
+      } else {
+        title += parameter+ " Concentration in " + district;
+      }
+      return title;
+    }
+  </script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      .bubble {
+        fill: steelblue;
+        fill-opacity: 0.8;
+        stroke: #000;
+        stroke-width: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid">
+        <div class="row">
+          <div class="col-2">
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark flex-column">
+              <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+              </button>
+              <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav flex-column">
+                  <li class="nav-item">
+                    <a class="nav-link active" href="index.html">
+                      <i class="fas fa-chart-bar mr-2"></i>
+                      Bar Chart
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="bar.html">
+                      <i class="fas fa-map-marker-alt mr-2"></i>
+                      Bar Chart 2
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="bubble.html">
+                      <i class="fas fa-map-marker-alt mr-2"></i>
+                      Bubble Chart 1
+                    </a>
+                  </li>
+
+                  <li class="nav-item">
+                    <a class="nav-link" href="map.html">
+                      <i class="fas fa-map-marker-alt mr-2"></i>
+                      Map
+                    </a>
+                  </li>
+                  <li class="nav-item ">
+                    <a class="nav-link" href="scatter.html">
+                      <i class="fas fa-dot-circle mr-2"></i>
+                      Scatter Plot
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="radar.html">
+                      <i class="fas fa-chart-area mr-2"></i>
+                      Radar Plot
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="treemap.html">
+                      <i class="fas fa-th-large mr-2"></i>
+                      Treemap
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </nav>
+          </div>
+          <div class="col-9">
+            <div class="container">
+                <h1><i class="fas fa-tint"></i> Water Quality Analysis</h1>
+    
+            <!-- End of Rest of your content here -->
+            <div id="tooltip" style="display: none;">
+              <span id="district"></span><br>
+              Value: <span id="value"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+    <svg id="my_dataviz" width="600" height="600"></svg>
+
+    <script>
+      // We first load the data from your data source
+      d3.csv("data_new.csv").then(data => {
+
+        // We then need to prepare the data
+        let districtData = {};
+        let maxEColi = 0;
+        let maxSources = 0;
+        data.forEach(d => {
+          if (!districtData[d.District]) {
+            districtData[d.District] = {eColi: 0, sources: 0};
+          }
+          let eColi = +d['E.Coli'];
+          if (isNaN(eColi)) eColi = 0;
+          districtData[d.District].eColi += eColi;
+          districtData[d.District].sources++;
+          if (districtData[d.District].eColi > maxEColi) maxEColi = districtData[d.District].eColi;
+          if (districtData[d.District].sources > maxSources) maxSources = districtData[d.District].sources;
+        });
+
+        // Scale for the bubbles
+        let radiusScale = d3.scaleSqrt().domain([0, maxSources]).range([0, 50]);
+
+        // X scale
+        let x = d3.scaleBand()
+          .domain(Object.keys(districtData))
+          .range([50, 550]);
+
+        // Y scale
+        let y = d3.scaleLinear()
+          .domain([0, maxEColi])
+          .range([550, 50]);
+
+        // Select the SVG
+        let svg = d3.select("#my_dataviz");
+
+        // Add the x-axis
+        svg.append("g")
+          .attr("transform", "translate(0,550)")
+          .call(d3.axisBottom(x));
+
+        // Add the y-axis
+        svg.append("g")
+          .attr("transform", "translate(50,0)")
+          .call(d3.axisLeft(y));
+
+        // Add one bubble per district to the SVG
+        svg.selectAll("circle")
+          .data(Object.entries(districtData))
+          .join("circle")
+            .attr("class", "bubble")
+            .attr("cx", d => x(d[0]))
+            .attr("cy", d => y(d[1].eColi))
+            .attr("r", d => radiusScale(d[1].sources))
+            .append("title")  // Tooltip to show value for each bubble
+            .text(d => `District: ${d[0]}, E.Coli Levels: ${d[1].eColi/d[1].sources.toFixed(2)}, Number of Sources: ${d[1].sources}`);
+
+        // Add labels for the axes
+        svg.append("text")
+            .attr("transform", "translate(300,590)")
+            .style("text-anchor", "middle")
+            .text("District");
+
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 10)
+            .attr("x", -300)
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("E.Coli Levels");
+      });
+    </script>
+  </body>
+</html>

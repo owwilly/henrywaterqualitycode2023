@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>D3 Bar Chart</title>
+  
+  <style>
+    @import url(https://fonts.googleapis.com/css2?family=Comfortaa:wght@300);
+    svg {
+      font: 10px sans-serif;
+    }
+
+    .bar {
+      fill: steelblue;
+    }
+
+    .bar:hover {
+      fill: brown;
+    }
+
+    .label {
+      font-size: 12px;
+      text-anchor: middle;
+      fill: white;
+    }
+
+
+    body {
+      font-family: 'Comfortaa', cursive;
+      background: linear-gradient(130deg, #ccc 5%, #c8c8c8 80%);
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 50px 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .container {
+      margin-top: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #chart-container {
+      margin-top: 30px;
+    }
+
+    #parameter-select {
+      margin-bottom: 20px;
+    }
+
+    .bar {
+      cursor: pointer;
+      transition: fill 0.3s;
+    }
+
+    .bar:hover {
+      fill: orange;
+    }
+
+    .target-line {
+      stroke-dasharray: 3, 3;
+      stroke: red;
+      stroke-width: 1;
+    }
+
+    .y-axis-label {
+      font-weight: bold;
+      text-anchor: middle;
+    }
+
+    .tooltip {
+      position: absolute;
+      padding: 10px;
+      background-color: white;
+      border: 1px solid #ccc;
+      pointer-events: none;
+    }
+
+    .tooltip div {
+      margin-bottom: 5px;
+    }
+
+    .navbar-dark .navbar-nav .nav-link {
+      color: #ffffff;
+      /* Set the text color */
+      transition: transform 0.3s ease-out;
+      /* Add transition for animation */
+    }
+
+    .navbar-dark .navbar-nav .nav-link:hover {
+      transform: translateY(-3px);
+      /* Raise the word on hover */
+    }
+
+    .navbar-dark .navbar-nav .nav-link:not(.active):hover {
+      background-color: #333333;
+      /* Adjust background color on hover */
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 32px;
+      color: #333;
+      margin-bottom: 40px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .select-wrapper {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 18px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .custom-select {
+      position: relative;
+      display: inline-block;
+      background-color: #fff;
+      border-radius: 4px;
+      padding: 10px;
+      width: 200px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+    }
+
+    .custom-select select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background: transparent;
+      border: none;
+      width: 100%;
+      outline: none;
+      cursor: pointer;
+      padding-right: 20px;
+    }
+
+    .custom-select i {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      pointer-events: none;
+      transition: transform 0.3s ease;
+    }
+
+    .custom-select:hover i {
+      transform: translateY(-50%) rotate(180deg);
+    }
+  </style>
+</head>
+
+<body>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-2">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark flex-column">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav flex-column">
+              <li class="nav-item">
+                <a class="nav-link active" href="index.html">
+                  <i class="fas fa-chart-bar mr-2"></i>
+                  Bar Chart
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="bar.html">
+                  <i class="fas fa-map-marker-alt mr-2"></i>
+                  Bar Chart 2
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="bubble.html">
+                  <i class="fas fa-map-marker-alt mr-2"></i>
+                  Bubble Chart 1
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="bubble2.html">
+                  <i class="fas fa-map-marker-alt mr-2"></i>
+                   Bubble Chart 2
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="map.html">
+                  <i class="fas fa-map-marker-alt mr-2"></i>
+                  Map
+                </a>
+              </li>
+              <li class="nav-item ">
+                <a class="nav-link" href="scatter.html">
+                  <i class="fas fa-dot-circle mr-2"></i>
+                  Scatter Plot
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="radar.html">
+                  <i class="fas fa-chart-area mr-2"></i>
+                  Radar Plot
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="treemap.html">
+                  <i class="fas fa-th-large mr-2"></i>
+                  Treemap
+                </a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+      <div class="col-9">
+        <div class="container">
+            <h1><i class="fas fa-tint"></i> Water Quality Analysis</h1>
+
+        <!-- End of Rest of your content here -->
+        <div id="tooltip" style="display: none;">
+          <span id="district"></span><br>
+          Value: <span id="value"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script>
+    d3.csv("data_new.csv").then((data) => {
+      const dataset = d3.group(data, d => d.District);
+      const districts = Array.from(dataset.keys());
+
+      const width = 600;
+      const height = 400;
+      const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+
+      const x = d3.scaleBand()
+        .domain(districts)
+        .range([0, innerWidth])
+        .padding(0.1);
+
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(dataset, d => d[1].length)])
+        .range([innerHeight, 0]);
+
+      const svg = d3.select("body")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      svg.selectAll(".bar")
+        .data(dataset)
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x(d[0]))
+        .attr("y", d => y(d[1].length))
+        .attr("width", x.bandwidth())
+        .attr("height", d => innerHeight - y(d[1].length))
+        .append("title")
+        .text(d => `District: ${d[0]}\nTotal Water Sources: ${d[1].length}`);
+
+      svg.selectAll(".label")
+        .data(dataset)
+        .enter()
+        .append("text")
+        .attr("class", "label")
+        .attr("x", d => x(d[0]) + x.bandwidth() / 2)
+        .attr("y", d => y(d[1].length) - 5)
+        .attr("text-anchor", "middle")
+        .text(d => d[1].length);
+
+      svg.append("g")
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(x));
+
+      svg.append("g")
+        .call(d3.axisLeft(y));
+    });
+  </script>
+</body>
+</html>
